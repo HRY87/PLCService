@@ -1,0 +1,43 @@
+{
+  "ConfiguracionSistema": {
+    "IntervaloLecturaSegundos": 5,
+    "Maquinas": [
+      {
+        "Id": 36,
+        "Nombre": "Extrusora1",
+        "Ip": "192.168.200.30",
+        "Puerto": 8000,
+        "Timeout": 3000
+      }
+    ],
+    "DatabaseLocal": {
+      "Tipo": "SqlServer",
+      "Host": "localhost",
+      "Puerto": 1433,
+      "Database": "prueba",
+      "Usuario": "sa",
+      "Password": "informatica87",
+      "UsarEncriptacion": false,
+      "TimeoutSegundos": 30,
+      "GuardarHistorico": true
+    },
+    "DatabaseNube": {
+      "Tipo": "",
+      "Host": "",
+      "Puerto": 0,
+      "Database": "",
+      "Usuario": "",
+      "Password": "",
+      "UsarEncriptacion": false,
+      "TimeoutSegundos": 30,
+      "GuardarHistorico": false
+    }
+  },
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft": "Warning",
+      "Microsoft.Hosting.Lifetime": "Information"
+    }
+  }
+}

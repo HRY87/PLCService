@@ -1,0 +1,234 @@
+@startuml ControlplastPLC_DER
+
+' Configuración del diagrama ER
+!define MYSQL_DATATYPE
+skinparam classBackgroundColor #FFF4E6
+skinparam classBorderColor #D84315
+skinparam classArrowColor #D84315
+
+' Fuente de datos
+entity "Maquinas" as maq {
+    *id : INT <<PK>>
+    --
+    nombre : VARCHAR(100)
+    descripcion : VARCHAR(255)
+    ip_plc : VARCHAR(15)
+    puerto : INT
+    estado : VARCHAR(20)
+    ultima_lectura : DATETIME
+    intentos_reconexion : INT
+    ultimo_error : VARCHAR(500)
+    habilitada : BIT
+    fecha_creacion : DATETIME
+    fecha_actualizacion : DATETIME
+}
+
+entity "Configuraciones_Maquinas" as config_maq {
+    *id : INT <<PK>>
+    maquina_id : INT <<FK>>
+    --
+    timeout : INT
+    intervalo_lectura : INT
+    intervalo_reconexion : INT
+    max_intentos_reconexion : INT
+    guardar_kgh_programado : BIT
+    guardar_espesor_programado : BIT
+    guardar_ancho_bruto_programado : BIT
+    guardar_ancho_neto_programado : BIT
+    guardar_gramaje_programado : BIT
+    guardar_velocidad_programada : BIT
+    guardar_kgh_actual : BIT
+    guardar_espesor_actual : BIT
+    guardar_ancho_bruto_actual : BIT
+    guardar_ancho_neto_actual : BIT
+    guardar_gramaje_actual : BIT
+    guardar_velocidad_actual : BIT
+    guardar_consumo_watt : BIT
+    guardar_kw_total : BIT
+    guardar_kw_por_kg : BIT
+    guardar_kw_dia : BIT
+}
+
+entity "DatosProduccionHistorico" as datos_prod {
+    *id : BIGINT <<PK>>
+    maquina_id : INT <<FK>>
+    timestamp : DATETIME
+    --
+    " === PRODUCCIÓN PROGRAMADA ==="
+    kg_hora_programado : FLOAT
+    espesor_programado : FLOAT
+    ancho_bruto_programado : FLOAT
+    ancho_neto_programado : FLOAT
+    gramaje_programado : FLOAT
+    metros_por_min_programado : FLOAT
+    " === PRODUCCIÓN ACTUAL ==="
+    kg_hora_actual : FLOAT
+    espesor_actual : FLOAT
+    ancho_bruto_actual : FLOAT
+    ancho_neto_actual : FLOAT
+    gramaje_actual : FLOAT
+    metros_por_min_actual : FLOAT
+}
+
+entity "RoscasProducto" as roscas {
+    *id : BIGINT <<PK>>
+    datos_produccion_id : BIGINT <<FK>>
+    maquina_id : INT <<FK>>
+    timestamp : DATETIME
+    --
+    " === ROSCA A ==="
+    rosca_a_grama_metro_actual : FLOAT
+    rosca_a_espesor_actual : FLOAT
+    rosca_a_porcentaje_actual : FLOAT
+    rosca_a_kg_hora_actual : FLOAT
+    rosca_a_silo1_actual : FLOAT
+    rosca_a_silo2_actual : FLOAT
+    rosca_a_silo3_actual : FLOAT
+    rosca_a_silo4_actual : FLOAT
+    rosca_a_silo5_actual : FLOAT
+    rosca_a_silo6_actual : FLOAT
+    rosca_a_total_silo1 : FLOAT
+    rosca_a_total_silo2 : FLOAT
+    rosca_a_total_silo3 : FLOAT
+    rosca_a_total_silo4 : FLOAT
+    rosca_a_total_silo5 : FLOAT
+    rosca_a_total_silo6 : FLOAT
+    rosca_a_densidad_silo1 : FLOAT
+    rosca_a_densidad_silo2 : FLOAT
+    rosca_a_densidad_silo3 : FLOAT
+    rosca_a_densidad_silo4 : FLOAT
+    rosca_a_densidad_silo5 : FLOAT
+    rosca_a_densidad_silo6 : FLOAT
+    " === ROSCA B ==="
+    rosca_b_grama_metro_actual : FLOAT
+    rosca_b_espesor_actual : FLOAT
+    rosca_b_porcentaje_actual : FLOAT
+    rosca_b_kg_hora_actual : FLOAT
+    rosca_b_silo1_actual : FLOAT
+    rosca_b_silo2_actual : FLOAT
+    rosca_b_silo3_actual : FLOAT
+    rosca_b_silo4_actual : FLOAT
+    rosca_b_silo5_actual : FLOAT
+    rosca_b_silo6_actual : FLOAT
+    rosca_b_total_silo1 : FLOAT
+    rosca_b_total_silo2 : FLOAT
+    rosca_b_total_silo3 : FLOAT
+    rosca_b_total_silo4 : FLOAT
+    rosca_b_total_silo5 : FLOAT
+    rosca_b_total_silo6 : FLOAT
+    rosca_b_densidad_silo1 : FLOAT
+    rosca_b_densidad_silo2 : FLOAT
+    rosca_b_densidad_silo3 : FLOAT
+    rosca_b_densidad_silo4 : FLOAT
+    rosca_b_densidad_silo5 : FLOAT
+    rosca_b_densidad_silo6 : FLOAT
+    " === ROSCA C ==="
+    rosca_c_grama_metro_actual : FLOAT
+    rosca_c_espesor_actual : FLOAT
+    rosca_c_porcentaje_actual : FLOAT
+    rosca_c_kg_hora_actual : FLOAT
+    rosca_c_silo1_actual : FLOAT
+    rosca_c_silo2_actual : FLOAT
+    rosca_c_silo3_actual : FLOAT
+    rosca_c_silo4_actual : FLOAT
+    rosca_c_silo5_actual : FLOAT
+    rosca_c_silo6_actual : FLOAT
+    " === ROSCA D ==="
+    rosca_d_grama_metro_actual : FLOAT
+    rosca_d_espesor_actual : FLOAT
+    rosca_d_porcentaje_actual : FLOAT
+    rosca_d_kg_hora_actual : FLOAT
+    rosca_d_silo1_actual : FLOAT
+    rosca_d_silo2_actual : FLOAT
+    rosca_d_silo3_actual : FLOAT
+    rosca_d_silo4_actual : FLOAT
+    rosca_d_silo5_actual : FLOAT
+    rosca_d_silo6_actual : FLOAT
+    " === ROSCA E ==="
+    rosca_e_grama_metro_actual : FLOAT
+    rosca_e_espesor_actual : FLOAT
+    rosca_e_porcentaje_actual : FLOAT
+    rosca_e_kg_hora_actual : FLOAT
+    rosca_e_silo1_actual : FLOAT
+    rosca_e_silo2_actual : FLOAT
+    rosca_e_silo3_actual : FLOAT
+    rosca_e_silo4_actual : FLOAT
+    rosca_e_silo5_actual : FLOAT
+    rosca_e_silo6_actual : FLOAT
+}
+
+entity "ConsumoEnergia" as consumo {
+    *id : BIGINT <<PK>>
+    datos_produccion_id : BIGINT <<FK>>
+    maquina_id : INT <<FK>>
+    timestamp : DATETIME
+    --
+    tension_l1 : FLOAT
+    tension_l2 : FLOAT
+    tension_l3 : FLOAT
+    amperes_l1 : FLOAT
+    amperes_l2 : FLOAT
+    amperes_l3 : FLOAT
+    consumo_actual_kw : FLOAT
+    kw_total : FLOAT
+    kw_por_kg : FLOAT
+    kw_dia : FLOAT
+}
+
+entity "DatosOperacion" as datos_op {
+    *id : BIGINT <<PK>>
+    datos_produccion_id : BIGINT <<FK>>
+    maquina_id : INT <<FK>>
+    timestamp : DATETIME
+    --
+    numero_op : VARCHAR(16)
+    estado_op : INT
+    kg_por_metro_op : FLOAT
+    tamano_bobina_op : FLOAT
+    kg_producidos : FLOAT
+    metros_producidos : FLOAT
+    consumo_total_op : FLOAT
+    recortes_op : FLOAT
+    datos_json : LONGTEXT
+}
+
+entity "EventosConexion" as eventos {
+    *id : BIGINT <<PK>>
+    maquina_id : INT <<FK>>
+    timestamp : DATETIME
+    --
+    tipo_evento : VARCHAR(50)
+    estado_anterior : VARCHAR(20)
+    estado_nuevo : VARCHAR(20)
+    descripcion : VARCHAR(500)
+    nivel_error : VARCHAR(20)
+}
+
+entity "RegistrosAuditoria" as auditoria {
+    *id : BIGINT <<PK>>
+    timestamp : DATETIME
+    --
+    tabla_modificada : VARCHAR(100)
+    tipo_operacion : VARCHAR(10)
+    usuario : VARCHAR(100)
+    datos_antiguos : LONGTEXT
+    datos_nuevos : LONGTEXT
+    ip_origen : VARCHAR(15)
+}
+
+' === RELACIONES ===
+maq ||--o{ config_maq : "tiene"
+maq ||--o{ datos_prod : "registra"
+maq ||--o{ roscas : "genera"
+maq ||--o{ consumo : "monitorea"
+maq ||--o{ datos_op : "procesa"
+maq ||--o{ eventos : "experimenta"
+
+datos_prod ||--o{ roscas : "contiene"
+datos_prod ||--o{ consumo : "incluye"
+datos_prod ||--o{ datos_op : "asociada"
+
+eventos }o--|| maq : "registro de"
+auditoria }o--|| maq : "audita cambios"
+
+@enduml

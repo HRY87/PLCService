@@ -1,0 +1,321 @@
+@startuml ControlplastPLC_ClassDiagram
+
+' Dirección de lectura
+top to bottom direction
+
+' Configuración visual
+skinparam classBackgroundColor #E3F2FD
+skinparam classBorderColor #1976D2
+skinparam classArrowColor #05090eff
+skinparam arrowFontColor #040708ff
+skinparam classAttributeIconSize 0
+skinparam arrowThickness 2
+
+' ====================================
+' NIVEL 0: PROGRAMA PRINCIPAL
+' ====================================
+class Program {
+    + {static} Main(string[] args): void
+    + {static} CreateHostBuilder(string[] args): IHostBuilder
+}
+
+' ====================================
+' NIVEL 1: WORKER Y MANAGER (Inicializadores)
+' ====================================
+class PLCMonitorWorker {
+    - _logger: ILogger<PLCMonitorWorker>
+    - _manager: MaquinaManagerService
+    - _config: ConfiguracionSistema
+    - _statusTimer: Timer?
+    ---
+    + ExecuteAsync(CancellationToken): Task
+    + StopAsync(CancellationToken): Task
+}
+
+class MaquinaManagerService {
+    - _maquinas: List<Maquina>
+    - _dbLocal: IDatabaseService
+    - _dbNube: IDatabaseService?
+    - _config: ConfiguracionSistema
+    - _globalCts: CancellationTokenSource?
+    ---
+    + Maquinas: IReadOnlyList<Maquina> {readOnly}
+    ---
+    + IniciarTodoAsync(): Task<bool>
+    + ObtenerEstadoSistemaAsync(): Task<Dictionary>
+    + DetenerTodo(): void
+    + Dispose(): void
+}
+
+' ====================================
+' NIVEL 2: CONFIGURACIÓN PRINCIPAL
+' ====================================
+class ConfiguracionSistema {
+    - Maquinas: List<MaquinaConfig>
+    - DatabaseLocal: DatabaseConfig
+    - DatabaseNube: DatabaseConfig?
+    - General: GeneralConfig
+}
+class ConfiguracionMaquina {
+    - Ip: string
+    - Puerto: int
+    - Timeout: int
+    - IntervaloLectura: int
+    - IntervaloReconexion: int
+    - MaxIntentosReconexion: int
+    - datosProduccionConfig: DatosProduccionConfig
+}
+class DatosProduccionConfig {
+    - GuardarKghProgramado: bool
+    - GuardarEspessuraProgramada: bool
+    - GuardarVelocidadeProgramada: bool
+    - GuardarKghAtual: bool
+    - GuardarEspessuraAtual: bool
+    - GuardarVelocidadeAtual: bool
+    - GuardarRoscaAGramaMetro: bool
+    - GuardarRoscaAEspessura: bool
+    - GuardarRoscaAKgh: bool
+    - GuardarConsumoWatt: bool
+    - GuardarKWTotal: bool
+}
+
+' ====================================
+' NIVEL 3A: CONFIGURACIÓN DE MÁQUINAS
+' ====================================
+class MaquinaConfig {
+    - Id: int
+    - Nombre: string
+    - Descripcion: string
+    - Habilitada: bool
+    - Configuracion: ConfiguracionMaquina
+}
+
+' ====================================
+' NIVEL 3B: CONFIGURACIÓN DE BASE DE DATOS
+' ====================================
+class DatabaseConfig {
+    - Tipo: string
+    - Host: string
+    - Puerto: int
+    - Database: string
+    - Usuario: string
+    - Password: string
+    - UsarEncriptacion: bool
+    - TimeoutSegundos: int
+    - GuardarHistorico: bool
+}
+
+class GeneralConfig {
+    - RutaLogs: string
+    - RetencionLogsDias: int
+    - LogVerbose: bool
+}
+
+' ====================================
+' NIVEL 4: MÁQUINA Y ESTADOS
+' ====================================
+enum EstadoMaquina {
+    Desconectada
+    Conectando
+    Conectada
+    Monitoreando
+    ErrorConexion
+    Reconectando
+}
+class DatosProduccion {
+    - KgHoraProgramado: double
+    - EspesorProgramado: double
+    - AnchoBrutoProgramado: double
+    - AnchoNetoProgramado: double
+    - GramajeProgramado: double
+    - MetrosPorMinProgramado: double
+    - KgHoraActual: double
+    - EspesorActual: double
+    - AnchoBrutoActual: double
+    - AnchoNetoActual: double
+    - GramajeActual: double
+    - MetrosPorMinActual: double
+    - RoscaA_GramaMetroActual: double
+    - RoscaA_EspesorActual: double
+    - RoscaA_KgHoraActual: double
+    - RoscaB_GramaMetroActual: double
+    - RoscaC_GramaMetroActual: double
+    - RoscaD_GramaMetroActual: double
+    - RoscaE_GramaMetroActual: double
+}
+class Maquina {
+    - Id: int
+    - Nombre: string
+    - Descripcion: string
+    - Configuracion: ConfiguracionMaquina
+    - Estado: EstadoMaquina
+    - UltimaLectura: DateTime?
+    - IntentosReconexion: int
+    - UltimoError: string?
+    ---
+    + EstaConectada: bool {readOnly}
+    + EstaMonitoreando: bool {readOnly}
+    ---
+    + ConectarAsync(): Task<bool>
+    + IniciarMonitoreoAsync(CancellationToken): Task
+    + Dispose(): void
+}
+class DatosProduccionEventArgs {
+    - MaquinaId: int
+    - Datos: DatosProduccion
+    - Timestamp: DateTime
+}
+class EstadoChangedEventArgs {
+    - MaquinaId: int
+    - EstadoAnterior: EstadoMaquina
+    - EstadoNuevo: EstadoMaquina
+    - Timestamp: DateTime
+}
+class ModelErrorEventArgs {
+    - MaquinaId: int
+    - Error: Exception
+    - Timestamp: DateTime
+}
+
+' ====================================
+' SERVICIOS
+' ====================================
+interface IDatabaseService {
+    + ConectarAsync(): Task<bool>
+    + DesconectarAsync(): Task
+    + GuardarDatosProduccionAsync(...): Task<bool>
+    + ActualizarDatosActualesAsync(...): Task<bool>
+    + EstaConectada: bool {readOnly}
+}
+class SqlServerDatabaseService {
+    - _config: DatabaseConfig
+    - _encryption: EncryptionService
+    - _connection: SqlConnection?
+    - _lockObj: object
+    ---
+    - EstaConectada: bool
+    ---
+    + ConectarAsync(): Task<bool>
+    + DesconectarAsync(): Task
+    + GuardarDatosProduccionAsync(...): Task<bool>
+    + ActualizarDatosActualesAsync(...): Task<bool>
+}
+' ====================================
+' NIVEL 5: DATOS Y EVENTOS
+' ====================================
+
+class EncryptionService {
+    - _iv: byte[]
+    ---
+    + Encrypt(string): string
+    + Decrypt(string): string
+}
+
+' ====================================
+' CLIENTE PLC
+' ====================================
+class ControlplastPLC {
+    - TIPO_DADOS: int
+    - TIPO_PARAMETROS: int
+    - ADDR_TENSION_L1: int
+    - ADDR_AMPERES_L1: int
+    - ADDR_CONSUMO_ACTUAL_KW: int
+    - ADDR_KG_HORA_PROGRAMADO: int
+    - ADDR_ROSCA_A_GRAMA_METRO_PROG: int
+    ---
+    - _ip: string
+    - _port: int
+    - _timeout: int
+    - _tcpClient: TcpClient?
+    - _stream: NetworkStream?
+    ---
+    - Connected: bool {readOnly}
+    ---
+    + ConnectAsync(): Task<bool>
+    + Disconnect(): void
+    + ReadWordsAsync(int, int, int): Task<int[]?>
+    + GetProducaoDataAsync(): Task<DatosProduccion?>
+    + Dispose(): void
+}
+
+class MaquinaManagerService {
+    - _maquinas: List<Maquina>
+    - _dbLocal: IDatabaseService
+    - _dbNube: IDatabaseService?
+    - _config: ConfiguracionSistema
+    - _globalCts: CancellationTokenSource?
+    ---
+    + Maquinas: IReadOnlyList<Maquina> {readOnly}
+    ---
+    + IniciarTodoAsync(): Task<bool>
+    + ObtenerEstadoSistemaAsync(): Task<Dictionary>
+    + DetenerTodo(): void
+    + Dispose(): void
+}
+
+
+' ====================================
+' WORKER
+' ====================================
+class PLCMonitorWorker {
+    - _logger: ILogger<PLCMonitorWorker>
+    - _manager: MaquinaManagerService
+    - _config: ConfiguracionSistema
+    - _statusTimer: Timer?
+    ---
+    + ExecuteAsync(CancellationToken): Task
+    + StopAsync(CancellationToken): Task
+}
+
+' ====================================
+' PROGRAMA PRINCIPAL
+' ====================================
+class Program {
+    + {static} Main(string[] args): void
+    + {static} CreateHostBuilder(string[] args): IHostBuilder
+}
+
+' Programa inicializa
+Program -down-> PLCMonitorWorker : "<<crea>>"
+Program -down-> MaquinaManagerService : "<<crea>>"
+Program -down-> EncryptionService : "<<crea>>"
+
+' Worker y Manager
+PLCMonitorWorker -down-> ConfiguracionSistema : "<<usa>>"
+PLCMonitorWorker -right-> MaquinaManagerService : "<<coordina>>"
+MaquinaManagerService -down-> ConfiguracionSistema : "<<carga>>"
+MaquinaManagerService -down-> Maquina : "<<gestiona *>>"
+MaquinaManagerService -down-> IDatabaseService : "<<almacena/sincroniza>>"
+
+' Configuración
+ConfiguracionSistema -down-> MaquinaConfig : "<<contiene *>>"
+MaquinaConfig -down-> ConfiguracionMaquina : "<<especifica>>"
+ConfiguracionMaquina -down-> DatosProduccionConfig : "<<contiene>>"
+ConfiguracionSistema -down-> DatabaseConfig : "<<define local/nube>>"
+ConfiguracionSistema -down-> GeneralConfig : "<<configura>>"
+
+' Máquina
+Maquina -down-> EstadoMaquina : "<<tiene>>"
+Maquina -down-> ControlplastPLC : "<<conecta>>"
+Maquina -down-> DatosProduccion : "<<produce>>"
+
+' PLC
+ControlplastPLC -down-> DatosProduccion : "<<retorna>>"
+
+' Servicios
+SqlServerDatabaseService -down-|> IDatabaseService : "<<implementa>>"
+SqlServerDatabaseService -down-> EncryptionService : "<<usa>>"
+SqlServerDatabaseService -down-> DatabaseConfig : "<<configura>>"
+
+' Eventos (mínimo de relaciones)
+Maquina -down-> DatosProduccionEventArgs : "<<lanza>>"
+MaquinaManagerService -right-> DatosProduccionEventArgs : "<<escucha>>"
+PLCMonitorWorker -right-> DatosProduccionEventArgs : "<<procesa>>"
+
+Maquina -down-> EstadoChangedEventArgs : "<<lanza>>"
+MaquinaManagerService -right-> EstadoChangedEventArgs : "<<escucha>>"
+
+Maquina -down-> ModelErrorEventArgs : "<<lanza>>"
+PLCMonitorWorker -right-> ModelErrorEventArgs : "<<procesa>>"
+
+@enduml

@@ -1,0 +1,109 @@
+@startuml ControlplastPLC_Componentes
+
+' Estilo visual
+skinparam componentStyle uml2
+skinparam backgroundColor #FAFAFA
+skinparam component {
+    BackgroundColor #B3E5FC
+    BorderColor #0277BD
+    ArrowColor #0277BD
+}
+skinparam package {
+    BackgroundColor #E1F5FE
+    BorderColor #01579B
+}
+skinparam interface {
+    BackgroundColor #81D4FA
+    BorderColor #01579B
+}
+skinparam arrowThickness 2
+top to bottom direction
+
+' ================================
+' COMPONENTES
+' ================================
+
+package "Componente de Presentación" {
+    component [Programa] as prog
+    component [TrabajadorPLC] as worker
+}
+
+package "Componente de Lógica de Negocio" {
+    component [ServicioGestorMaquinas] as manager
+    component [Maquina] as maquina
+    component [ClientePLC] as plc_client
+}
+
+package "Componente de Modelos" {
+    component [ConfiguracionSistema] as config_sys
+    component [DatosProduccion] as datos_prod
+    component [ModeloMaquina] as model_maq
+    component [Eventos] as events
+}
+
+package "Componente de Acceso a Datos" {
+    interface [IServicioBaseDatos] as db_interface
+    component [ServicioSQLServer] as db_service
+    component [ServicioEncriptacion] as encryption
+}
+
+package "Componente de Infraestructura" {
+    component [Base de Datos SQL Server] as sqldb
+    component [Controlador PLC] as plc_hw
+    component [Registro (Serilog)] as logging
+}
+
+package "Contratos" {
+    interface [IServicioHospedado] as ihosted
+    interface [IDesechable] as idisposable
+}
+
+package "Sistemas Externos" {
+    component [PLCs (TCP/IP)] as plc_external
+    component [SQL Server] as sql_external
+    component [Servicio Windows] as winservice
+    component [Destino Serilog] as serilog_sink
+}
+
+' ================================
+' RELACIONES ORDENADAS
+' ================================
+
+' Presentación → Negocio
+prog -down-> worker : "crea e inicia"
+worker -down-> manager : "usa"
+worker -right-> config_sys : "lee configuración"
+
+' Negocio → Modelos
+manager -down-> model_maq : "gestiona"
+manager -down-> datos_prod : "procesa"
+manager -down-> events : "lanza eventos"
+
+maquina -right-> plc_client : "conecta"
+maquina -down-> datos_prod : "produce"
+maquina -down-> events : "dispara"
+
+' Negocio → Datos
+manager -right-> db_interface : "usa interfaz"
+plc_client -down-> plc_hw : "comunica"
+
+' Datos → Infraestructura
+db_interface -down-> db_service : "implementa"
+db_service -right-> encryption : "usa encriptación"
+db_service -down-> sqldb : "conecta"
+
+' Infraestructura → Externos
+sqldb -down-> sql_external : "persiste"
+plc_hw -down-> plc_external : "comunica"
+logging -down-> serilog_sink : "escribe logs"
+
+' Presentación → Infraestructura
+worker -right-> logging : "registra"
+prog -down-> winservice : "se registra"
+
+' Contratos
+worker --|> ihosted
+db_service --|> idisposable
+manager --|> idisposable
+
+@enduml
