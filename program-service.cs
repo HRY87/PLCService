@@ -1,7 +1,6 @@
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using ControlplastPLCService.Services;
 using ControlplastPLCService.Models;
 using System;
 using System.IO;
@@ -13,7 +12,7 @@ namespace ControlplastPLCService
     {
         public static void Main(string[] args)
         {
-            // Configurar Serilog
+            // Configurar Serilog para logs en consola y archivo
             var logPath = Path.Combine(AppContext.BaseDirectory, "logs", "service-.log");
             
             Log.Logger = new LoggerConfiguration()
@@ -30,7 +29,7 @@ namespace ControlplastPLCService
             try
             {
                 Log.Information("==============================================");
-                Log.Information("Iniciando Servicio de Windows - ControlplastPLC");
+                Log.Information("Iniciando Servicio de Monitoreo PLC");
                 Log.Information("==============================================");
                 
                 CreateHostBuilder(args).Build().Run();
@@ -54,7 +53,7 @@ namespace ControlplastPLCService
                 .ConfigureServices((hostContext, services) =>
                 {
                     // Cargar configuración
-                    var configPath = Path.Combine(AppContext.BaseDirectory, "appsetting.json");
+                    var configPath = Path.Combine(AppContext.BaseDirectory, "appsettings.json");
                     
                     if (!File.Exists(configPath))
                     {
@@ -62,7 +61,19 @@ namespace ControlplastPLCService
                     }
                     
                     var configJson = File.ReadAllText(configPath);
-                    var config = JsonSerializer.Deserialize<ConfiguracionSistema>(configJson, 
+                    
+                    // Primero parseamos el JSON completo
+                    var jsonDocument = JsonDocument.Parse(configJson);
+                    
+                    // Extraemos el nodo "ConfiguracionSistema"
+                    if (!jsonDocument.RootElement.TryGetProperty("ConfiguracionSistema", out JsonElement configElement))
+                    {
+                        throw new InvalidOperationException("No se encontró la sección 'ConfiguracionSistema' en appsettings.json");
+                    }
+                    
+                    // Deserializamos desde ese nodo
+                    var config = JsonSerializer.Deserialize<ConfiguracionSistema>(
+                        configElement.GetRawText(), 
                         new JsonSerializerOptions 
                         { 
                             PropertyNameCaseInsensitive = true,
@@ -75,34 +86,26 @@ namespace ControlplastPLCService
                         throw new InvalidOperationException("No se pudo cargar la configuración");
                     }
                     
-                    // Registrar servicios
-                    services.AddSingleton(config);
+                    // Log para debug
+                    Log.Information("Configuración cargada: {MaquinasCount} máquina(s) definidas", 
+                        config.Maquinas?.Count ?? 0);
                     
-                    // Servicio de encriptación
-                    services.AddSingleton<EncryptionService>(sp => 
-                        new EncryptionService("ControlplastMasterKey2024!"));
-                    
-                    // Base de datos local
-                    services.AddSingleton<IDatabaseService>(sp =>
+                    if (config.Maquinas != null)
                     {
-                        var encryption = sp.GetRequiredService<EncryptionService>();
-                        return new SqlServerDatabaseService(config.DatabaseLocal, encryption);
-                    });
-                    
-                    // Base de datos nube (opcional)
-                    if (config.DatabaseNube != null && !string.IsNullOrEmpty(config.DatabaseNube.Host))
-                    {
-                        services.AddSingleton<IDatabaseService>(sp =>
+                        foreach (var maq in config.Maquinas)
                         {
-                            var encryption = sp.GetRequiredService<EncryptionService>();
-                            return new SqlServerDatabaseService(config.DatabaseNube, encryption);
-                        });
+                            Log.Information("  - {Nombre} ({IP}:{Puerto}) - Habilitada: {Habilitada}",
+                                maq.Nombre, 
+                                maq.Configuracion?.Ip ?? "N/A", 
+                                maq.Configuracion?.Puerto ?? 0,
+                                maq.Habilitada);
+                        }
                     }
                     
-                    // Manager de máquinas
-                    services.AddSingleton<MaquinaManagerService>();
+                    // Registrar configuración como singleton
+                    services.AddSingleton(config);
                     
-                    // Registrar Worker (el servicio principal)
+                    // Registrar Worker (servicio principal de monitoreo)
                     services.AddHostedService<PLCMonitorWorker>();
                 })
                 .UseSerilog();

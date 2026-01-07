@@ -10,8 +10,8 @@ namespace ControlplastPLCService.Services
     public class MaquinaManagerService : IDisposable
     {
         private readonly List<Maquina> _maquinas = new();
-        private readonly IDatabaseService _dbLocal;
-        private readonly IDatabaseService? _dbNube;
+        //private readonly IDatabaseService _dbLocal;
+        //private readonly IDatabaseService? _dbNube;
         private readonly ConfiguracionSistema _config;
         private CancellationTokenSource? _globalCts;
         private bool _disposed;
@@ -23,13 +23,13 @@ namespace ControlplastPLCService.Services
         public event EventHandler<ModelErrorEventArgs>? ErrorOcurrido;
         
         public MaquinaManagerService(
-            ConfiguracionSistema config,
-            IDatabaseService dbLocal,
-            IDatabaseService? dbNube = null)
+            ConfiguracionSistema config)
+            //IDatabaseService dbLocal,
+            //IDatabaseService? dbNube = null)
         {
             _config = config;
-            _dbLocal = dbLocal;
-            _dbNube = dbNube;
+            //_dbLocal = dbLocal;
+            //_dbNube = dbNube;
             
             InicializarMaquinas();
         }
@@ -62,7 +62,7 @@ namespace ControlplastPLCService.Services
             Console.WriteLine("\n╔════════════════════════════════════════════════════════════╗");
             Console.WriteLine("║          INICIANDO SISTEMA DE MONITOREO                    ║");
             Console.WriteLine("╚════════════════════════════════════════════════════════════╝\n");
-            
+            /*
             // 1. Conectar base de datos local
             Console.WriteLine("🗄️  Conectando a base de datos local...");
             if (!await _dbLocal.ConectarAsync())
@@ -77,7 +77,7 @@ namespace ControlplastPLCService.Services
                 Console.WriteLine("☁️  Conectando a base de datos en nube...");
                 await _dbNube.ConectarAsync(); // No es crítico si falla
             }
-            
+            */
             // 3. Conectar todas las máquinas
             Console.WriteLine($"\n🏭 Conectando {_maquinas.Count} máquina(s)...");
             var tareasConexion = _maquinas.Select(m => ConectarMaquinaAsync(m)).ToArray();
@@ -148,14 +148,14 @@ namespace ControlplastPLCService.Services
             if (maquina == null) return;
             
             try
-            {
+            {/*
                 // Guardar en base de datos local (histórico)
                 if (_config.DatabaseLocal.GuardarHistorico)
                 {
                     await _dbLocal.GuardarDatosProduccionAsync(
                         e.MaquinaId,
                         e.Datos,
-                        maquina.Configuracion.datosProduccionConfig
+                        maquina.Configuracion.Sensores
                     );
                 }
                 
@@ -163,7 +163,7 @@ namespace ControlplastPLCService.Services
                 await _dbLocal.ActualizarDatosActualesAsync(
                     e.MaquinaId,
                     e.Datos,
-                    maquina.Configuracion.datosProduccionConfig
+                    maquina.Configuracion.Sensores
                 );
                 
                 // Intentar guardar en nube
@@ -172,7 +172,7 @@ namespace ControlplastPLCService.Services
                     await _dbNube.ActualizarDatosActualesAsync(
                         e.MaquinaId,
                         e.Datos,
-                        maquina.Configuracion.datosProduccionConfig
+                        maquina.Configuracion.Sensores
                     );
                 }
                 else if (_dbNube != null && !_dbNube.EstaConectada)
@@ -180,7 +180,7 @@ namespace ControlplastPLCService.Services
                     // Intentar reconectar a la nube
                     _ = Task.Run(async () => await _dbNube.ConectarAsync());
                 }
-                
+                */
                 // Propagar evento
                 DatosRecibidos?.Invoke(this, e);
                 
@@ -261,8 +261,8 @@ namespace ControlplastPLCService.Services
                 ["TotalMaquinas"] = _maquinas.Count,
                 ["MaquinasConectadas"] = _maquinas.Count(m => m.EstaConectada),
                 ["MaquinasMonitoreando"] = _maquinas.Count(m => m.EstaMonitoreando),
-                ["BaseDatosLocal"] = _dbLocal.EstaConectada ? "Conectada" : "Desconectada",
-                ["BaseDatosNube"] = _dbNube?.EstaConectada == true ? "Conectada" : "Desconectada",
+                //["BaseDatosLocal"] = _dbLocal.EstaConectada ? "Conectada" : "Desconectada",
+                //["BaseDatosNube"] = _dbNube?.EstaConectada == true ? "Conectada" : "Desconectada",
                 ["UltimaActualizacion"] = DateTime.Now
             };
             
@@ -291,8 +291,8 @@ namespace ControlplastPLCService.Services
             
             try
             {
-                _dbLocal?.DesconectarAsync().Wait();
-                _dbNube?.DesconectarAsync().Wait();
+                // _dbLocal?.DesconectarAsync().Wait();
+                // _dbNube?.DesconectarAsync().Wait();
             }
             catch { }
             

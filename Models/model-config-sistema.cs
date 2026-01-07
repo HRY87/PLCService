@@ -2,14 +2,18 @@ using System.Collections.Generic;
 
 namespace ControlplastPLCService.Models
 {
+    /// <summary>
+    /// Configuración general del sistema de monitoreo
+    /// </summary>
     public class ConfiguracionSistema
     {
         public List<MaquinaConfig> Maquinas { get; set; } = new();
-        public DatabaseConfig DatabaseLocal { get; set; } = new();
-        public DatabaseConfig? DatabaseNube { get; set; }
         public GeneralConfig General { get; set; } = new();
     }
     
+    /// <summary>
+    /// Configuración individual de cada máquina PLC
+    /// </summary>
     public class MaquinaConfig
     {
         public int Id { get; set; }
@@ -19,23 +23,14 @@ namespace ControlplastPLCService.Models
         public ConfiguracionMaquina Configuracion { get; set; } = new();
     }
     
-    public class DatabaseConfig
-    {
-        public string Tipo { get; set; } = "SqlServer";
-        public string Host { get; set; } = "localhost";
-        public int Puerto { get; set; } = 1433;
-        public string Database { get; set; } = "ControlplastPLC";
-        public string Usuario { get; set; } = "sa";
-        public string Password { get; set; } = string.Empty;
-        public bool UsarEncriptacion { get; set; } = true;
-        public int TimeoutSegundos { get; set; } = 30;
-        public bool GuardarHistorico { get; set; } = true;
-    }
-    
+    /// <summary>
+    /// Configuración general del sistema (logs, etc)
+    /// </summary>
     public class GeneralConfig
     {
         public string RutaLogs { get; set; } = "logs";
         public int RetencionLogsDias { get; set; } = 30;
         public bool LogVerbose { get; set; } = false;
+        public int IntervaloLogEstadoMinutos { get; set; } = 5;
     }
 }

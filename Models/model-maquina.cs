@@ -91,7 +91,7 @@ namespace ControlplastPLCService.Models
                             continue;
                         }
                     }
-
+                    
                     var datos = await _plcClient!.GetDatosProduccionAsync();
                     UltimaLectura = DateTime.Now;
                     

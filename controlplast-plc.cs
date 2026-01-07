@@ -473,7 +473,7 @@ namespace ControlplastPLCService
             
             return result.ToString().Replace("\0", "").Trim();
         }
-
+        
         public async Task<DatosProduccion> GetDatosProduccionAsync()
         {
             var data = new DatosProduccion();

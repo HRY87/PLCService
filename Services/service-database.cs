@@ -2,7 +2,7 @@ using System;
 using System.Data.SqlClient;
 using System.Threading.Tasks;
 using ControlplastPLCService.Models;
-
+/*
 namespace ControlplastPLCService.Services
 {
     public interface IDatabaseService
@@ -283,3 +283,4 @@ namespace ControlplastPLCService.Services
         }
     }
 }
+*/
